@@ -22,7 +22,9 @@ def main():
     parser.add_argument("-b", "--baseline", help ='Measure baseline. Automatic -nO', action = 'store_true')
     parser.add_argument("-sF", "--setupFolders", help = 'Generates default folder structure', action = 'store_true')
     parser.add_argument("-sC", "--setupConfig", help = 'Generates default configuration file', action = 'store_true')
-    parser.add_argument("-p", "--plotAll", help ='Plot all observation files. Automatic -nO')
+    parser.add_argument("-pA", "--plotAll", help ='Plot all observation files. Automatic -nO', action = 'store_true')
+    parser.add_argument("-nP", "--noPlot", help ='Disables automatic plotting', action = 'store_true')
+    
     
     args = parser.parse_args()
     
@@ -62,7 +64,7 @@ def main():
     i = 0
     while i < runs:
         print("Starting observation {0} of {1}".format(i + 1, runs))
-        observe(obs)
+        observe(obs, args.noPlot)
         i += 1
     
     print("Done")
@@ -150,7 +152,7 @@ def baseline(obs):
     print('\n--------Calibration finished--------\n')
     
     
-def observe(obs):
+def observe(obs, noPlot):
     print('\n--------Starting observation--------\n')
     # Begin data acquisition    
     filename = 'observation ' + str(Time.now()).replace(':', '_') + '.dat'
@@ -158,7 +160,8 @@ def observe(obs):
     fp.close()
     virgo.observe(obs_parameters=obs, obs_file=storagePath + 'observationData/observations/' + filename, spectrometer='wola', start_in = 0)
     print('\n--------Observation finished, plotting--------\n')
-    analyzeData(filename, obs)
+    if noPlot == False:
+        analyzeData(filename, obs)
     
 
 def analyzeData(filename, obs):
