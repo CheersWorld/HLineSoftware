@@ -6,8 +6,7 @@ The specific goal with this application is to create a program that allows obvse
 Foe each observation the waterfall and spectra are saved using VIRGO, peaks in the spectrum are then identified using pandas.
 
 # Dependencies
-This project is based on [VIRGO](https://github.com/0xCoto/VIRGO), therefore it shares its dependencies. The moving average filter is taken from [motorr4ik](https://github.com/motorrr4ik/moving_average_filters)
-I had to modify some parts of virgo.py, you can find the modified version in this repository. 
+This project is based on [VIRGO](https://github.com/0xCoto/VIRGO), therefore it shares its dependencies. The moving average filter is taken from [motorr4ik](https://github.com/motorrr4ik/moving_average_filters). I had to modify some parts of virgo.py, you can find the modified version in this repository. 
 
 # Installation
 Clone the github repo, and in the console run
