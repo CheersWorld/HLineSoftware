@@ -10,6 +10,10 @@ from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz
 import astropy.units as u
 import configparser
+import threading
+from progressbar import progressbar
+import time
+from tqdm import tqdm
 
 
 def main():
@@ -51,8 +55,7 @@ def main():
 
     if args.plotAll:
         files = glob.glob(storagePath + '/observationData/observations/' + '*.dat')
-        for filePath in files:
-            print('Analyzing ' + filePath)
+        for filePath in tqdm(files):
             analyzeData(filePath.split('/')[(len(filePath.split('/')) - 1)], obs)
     
     if args.noObservation or args.baseline or args.plotAll:
@@ -60,13 +63,12 @@ def main():
     
     if args.runs:
         runs = int(args.runs)
-        
+    
     i = 0
     while i < runs:
         print("Starting observation {0} of {1}".format(i + 1, runs))
         observe(obs, args.noPlot)
         i += 1
-    
     print("Done")
 
 def readConfig():
@@ -142,7 +144,6 @@ def makeFileStructure():
                                'l':[],
                                'b':[],
                                'hz':[]})
-            print(df)
             df.to_csv(storagePath + 'allObservations.csv')
 
 
@@ -159,7 +160,7 @@ def observe(obs, noPlot):
     fp = open(storagePath + 'observationData/observations/' + filename, 'x')
     fp.close()
     virgo.observe(obs_parameters=obs, obs_file=storagePath + 'observationData/observations/' + filename, spectrometer='wola', start_in = 0)
-    print('\n--------Observation finished, plotting--------\n')
+    print('\n--------Observation finished--------\n')
     if noPlot == False:
         analyzeData(filename, obs)
     
@@ -197,7 +198,13 @@ def analyzeData(filename, obs):
     
 
     if peaks[0].size > 0:        
-        writeFrame = pd.DataFrame()
+        writeFrame = pd.DataFrame(
+            {'time': [],
+              'ra': [],
+              'dec': [],
+              'l': [],
+              'b': [],
+              'hz': []})
         for i in range(0, len(peaks[0]) - 1):
             export = {'time': [recordedTime],
                       'ra': [raDec[0]],
@@ -205,11 +212,8 @@ def analyzeData(filename, obs):
                       'l': [galCoord[0]],
                       'b': [galCoord[1]],
                       'hz': [_temporaryData[:]['hz'][peaks[0][i]]]}
-            writeFrame = pd.DataFrame(export)
-            print('\n')
-            print(writeFrame)
-            print('\n')
-            writeFrame.to_csv(storagePath + 'allObservations.csv', mode='a', index=False, header=False)
+            writeFrame = pd.concat([writeFrame, pd.DataFrame(export)])
+        writeFrame.to_csv(storagePath + 'allObservations.csv', mode='a', index=False, header=False)
     
     plt.figure(dpi = 250)
     plt.plot(_temporaryData[:]['hz'], spectrumAverage)
