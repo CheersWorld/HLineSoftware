@@ -12,6 +12,8 @@ from astropy.coordinates import SkyCoord, EarthLocation
 import astropy.units as u
 import configparser
 from tqdm import tqdm
+import seaborn as sns
+import numpy as np
 
 
 
@@ -32,6 +34,9 @@ def main():
     parser.add_argument("-sC", "--setupConfig", help = 'Generates default configuration file', action = 'store_true')
     parser.add_argument("-pA", "--plotAll", help ='Plot all observation files. Automatic -nO', action = 'store_true')
     parser.add_argument("-nP", "--noPlot", help ='Disables automatic plotting', action = 'store_true')
+    parser.add_argument("-map", "--heatmap", help ='Generate heatmap from recorded data', action = 'store_true')
+    parser.add_argument("-i", "--infinite", help ='Infinite runs. Continue until stopped', action = 'store_true')
+    
     
     
     args = parser.parse_args()
@@ -45,31 +50,48 @@ def main():
     
     if args.duration:
         obs['duration'] = float(args.duration)
+        
     if args.timeSample:
         obs['t_sample'] = float(args.timeSample)
+    
     if args.channels:
         obs['channels'] = int(args.channels)
-    
-    if args.baseline:
-        baseline(obs)
-
-    if args.plotAll:
-        files = glob.glob(storagePath + '/observationData/observations/' + '*.dat')
-        for filePath in tqdm(files):
-            analyzeData(filePath.split('/')[(len(filePath.split('/')) - 1)], obs)
-    
-    if args.noObservation or args.baseline or args.plotAll:
-        return
     
     if args.prominence:    
         global peakProminence
         peakProminence = float(args.prominence)
+    
     if args.width:    
         global peakWidth
         peakWidth = float(args.width)
+    
     if args.height:    
         global peakHeight
         peakHeight = float(args.height)
+    
+    if args.baseline:
+        baseline(obs)
+        return
+    
+    if args.plotAll:
+        files = glob.glob(storagePath + '/observationData/observations/' + '*.dat')
+        for filePath in tqdm(files):
+            analyzeData(filePath.split('/')[(len(filePath.split('/')) - 1)], obs)
+        return
+    
+    if args.noObservation:
+        return
+    
+    if args.heatmap:
+        heatmap()
+        return
+    
+    if args.infinite:
+        i = 0
+        while True:
+            print("Starting observation {0}".format(i + 1))
+            observe(obs, args.noPlot)
+            i += 1
     
     global runs
     if args.runs:
@@ -242,6 +264,7 @@ def analyzeData(filename, obs):
                       'b': [galCoord[1]],
                       'hz': [_temporaryData[:]['hz'][peaks[0][i]]]}
             writeFrame = pd.concat([writeFrame, pd.DataFrame(export)])
+        print(writeFrame)
         writeFrame.to_csv(storagePath + 'allObservations.csv', mode='a', index=False, header=False)
     
     plt.figure(dpi = 250)
@@ -285,6 +308,16 @@ def oldTimeEquatorial(alt, az, lat, lon, time, height=0):
 
 	# Return position as tuple
 	return (ra, dec)
+
+def heatmap():
+    data = pd.read_csv(storagePath + 'allObservations.csv')
+    df = pd.DataFrame({'l': data['l'][:], 'b': data['b'][:], 'hz': data['hz'][:]})
+    dfPivoted = pd.pivot_table(df, values = 'hz', index = ['l', 'b'], aggfunc = np.mean)
+    sns.heatmap(dfPivoted.reset_index().pivot('l', 'b', 'hz'))
+    plt.show()
+    plt.savefig(storagePath + 'plots/peakIdentification/heatmap ' + Time.now() + '.png')
+    plt.close('all')
+    
 
 if __name__ == "__main__":
     main()
