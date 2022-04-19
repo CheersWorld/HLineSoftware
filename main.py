@@ -62,7 +62,7 @@ def main():
     if args.width:    
         global peakWidth
         peakWidth = float(args.width)
-    if args.Height:    
+    if args.height:    
         global peakHeight
         peakHeight = float(args.height)
     
@@ -108,7 +108,7 @@ def readConfig():
     peakHeight = float(config['Peakfinding']['Height'])
     
     
-    return obs, 
+    return obs
 
 def makeDefaultConfigurationFile():
     config_file = configparser.ConfigParser()
