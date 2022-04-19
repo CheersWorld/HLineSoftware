@@ -7,12 +7,9 @@ from scipy.signal import find_peaks
 import glob
 import argparse
 from astropy.time import Time
-from astropy.coordinates import SkyCoord, EarthLocation, AltAz
+from astropy.coordinates import SkyCoord, EarthLocation
 import astropy.units as u
 import configparser
-import threading
-from progressbar import progressbar
-import time
 from tqdm import tqdm
 
 
@@ -22,6 +19,9 @@ def main():
     parser.add_argument("-r", "--runs", help = 'Number of measurements performed')
     parser.add_argument("-d", "--duration", help ='Time per observation (s)')
     parser.add_argument("-t", "--timeSample", help ='Time per sample')
+    parser.add_argument("-p", "--prominence", help ='Minimum peak prominence for peakfinding')
+    parser.add_argument("-w", "--width", help ='Minimum peak width for peakfinding')
+    parser.add_argument("-mH", "--height", help ='Minimum peak height for peakfinding')
     parser.add_argument("-nO", "--noObservation", help ='Disables automatic data acquisition', action = 'store_true')
     parser.add_argument("-b", "--baseline", help ='Measure baseline. Automatic -nO', action = 'store_true')
     parser.add_argument("-sF", "--setupFolders", help = 'Generates default folder structure', action = 'store_true')
@@ -35,12 +35,7 @@ def main():
     if args.setupConfig:
         makeDefaultConfigurationFile()
 
-    global storagePath
-    
-    config = readConfig()
-    obs = config[0]
-    runs = int(config[1])
-    storagePath = config[2]
+    obs = readConfig()
     
     if args.setupFolders:
         makeFileStructure()
@@ -60,6 +55,17 @@ def main():
     
     if args.noObservation or args.baseline or args.plotAll:
         return
+    
+    if args.prominence:    
+        global peakProminence
+        peakProminence = float(args.prominence)
+    if args.width:    
+        global peakWidth
+        peakWidth = float(args.width)
+    if args.Height:    
+        global peakHeight
+        peakHeight = float(args.height)
+    
     
     if args.runs:
         runs = int(args.runs)
@@ -89,15 +95,29 @@ def readConfig():
         'az_alt': config['ObservationParameters']['az_alt']
     }
     print('\nConfiguration file loaded succesfully\n')    
-    return obs, config['RunParameters']['runCount'], config['StorageParameters']['storagePath']
+    
+    global storagePath
+    global runs
+    global peakProminence
+    global peakWidth
+    global peakHeight
+    storagePath = config['Storage']['storagePath']
+    runs = int(config['ObservationParameters']['runCount'])
+    peakProminence = float(config['Peakfinding']['prominence'])
+    peakWidth = float(config['Peakfinding']['Width'])
+    peakHeight = float(config['Peakfinding']['Height'])
+    
+    
+    return obs, 
 
 def makeDefaultConfigurationFile():
     config_file = configparser.ConfigParser()
     
     # ADD SECTION
     config_file.add_section("ObservationParameters")
-    config_file.add_section("RunParameters")
-    config_file.add_section("StorageParameters")
+    config_file.add_section("Storage")
+    config_file.add_section("Peakfinding")
+    
     config_file.set("ObservationParameters", "dev_args", "rtl,bias=1")
     config_file.set("ObservationParameters", "rf_gain", "30")
     config_file.set("ObservationParameters", "if_gain", "25")
@@ -110,24 +130,19 @@ def makeDefaultConfigurationFile():
     config_file.set("ObservationParameters", "loc", "")
     config_file.set("ObservationParameters", "ra_dec", "")
     config_file.set("ObservationParameters", "az_alt", "")
-    config_file.set("RunParameters", "runCount", "1")
-    config_file.set("StorageParameters", "storagePath", "../HLineObservations/")
+    config_file.set("ObservationParameters", "runCount", "1")
+    config_file.set("Storage", "storagePath", "../HLineObservations/")
+    config_file.set("Peakfinding", "Prominence", "0")
+    config_file.set("Peakfinding", "Width", "10")
+    config_file.set("Peakfinding", "Height", "1.14")
     
     # SAVE CONFIG FILE
     with open(r"configurations.ini", 'w') as configfileObj:
         config_file.write(configfileObj)
         configfileObj.flush()
         configfileObj.close()
-    
     print("Config file 'configurations.ini' created")
     
-    # PRINT FILE CONTENT
-    read_file = open("configurations.ini", "r")
-    content = read_file.read()
-    print("Content of the config file are:\n")
-    print(content)
-    read_file.flush()
-    read_file.close()
 
 def makeFileStructure():
         if not os.path.exists(storagePath):
