@@ -1,6 +1,7 @@
 import virgo
 import pandas as pd
 import os
+import datetime
 from moving_average import moving_average
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
@@ -19,6 +20,7 @@ def main():
     parser.add_argument("-r", "--runs", help = 'Number of measurements performed')
     parser.add_argument("-d", "--duration", help ='Time per observation (s)')
     parser.add_argument("-t", "--timeSample", help ='Time per sample')
+    parser.add_argument("-c", "--channels", help ='Number of sample channels')
     parser.add_argument("-p", "--prominence", help ='Minimum peak prominence for peakfinding')
     parser.add_argument("-w", "--width", help ='Minimum peak width for peakfinding')
     parser.add_argument("-mH", "--height", help ='Minimum peak height for peakfinding')
@@ -44,6 +46,8 @@ def main():
         obs['duration'] = float(args.duration)
     if args.timeSample:
         obs['t_sample'] = float(args.timeSample)
+    if args.channels:
+        obs['channels'] = int(args.channels)
     
     if args.baseline:
         baseline(obs)
@@ -169,7 +173,8 @@ def baseline(obs):
     
     
 def observe(obs, noPlot):
-    print('\n--------Starting observation--------\n')
+    print('\n--------Starting observation--------')
+    print('Current time: {0}.\nEstimated completion: {1}\n'.format(Time.now(), Time.now() + datetime.timedelta(seconds = obs['duration'])))
     # Begin data acquisition    
     filename = 'observation ' + str(Time.now()).replace(':', '_') + '.dat'
     fp = open(storagePath + 'observationData/observations/' + filename, 'x')
