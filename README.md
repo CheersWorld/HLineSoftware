@@ -42,6 +42,8 @@ The program will read the execution parameters from the configuration file. Thes
 -sC, --setupConfig: Generates default configuration file
 -pA, --plotAll: Plot all observation files. Automatic -nO
 -nP, --noPlot: Disables automatic plotting
+-map, --heatmap: Plot heatmap of aqcuried data
+-i, --infinite: Infinite run count
 ```
 
 Plotting data requires a baseline to be captured, otherwise the program will crash. You can still record data without plotting by using the -nP flag. 
