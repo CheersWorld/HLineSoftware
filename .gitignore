@@ -133,3 +133,5 @@ csvFiles/
 imageExport/
 
 observationData/
+
+*.ini
