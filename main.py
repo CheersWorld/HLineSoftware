@@ -14,7 +14,9 @@ import configparser
 from tqdm import tqdm
 
 
+
 def main():
+    global obs
     parser = argparse.ArgumentParser()
     
     parser.add_argument("-r", "--runs", help = 'Number of measurements performed')
@@ -33,11 +35,10 @@ def main():
     
     
     args = parser.parse_args()
+    readConfig()    
     
     if args.setupConfig:
         makeDefaultConfigurationFile()
-
-    obs = readConfig()
     
     if args.setupFolders:
         makeFileStructure()
@@ -70,10 +71,9 @@ def main():
         global peakHeight
         peakHeight = float(args.height)
     
-    
+    global runs
     if args.runs:
         runs = int(args.runs)
-    
     i = 0
     while i < runs:
         print("Starting observation {0} of {1}".format(i + 1, runs))
@@ -82,6 +82,18 @@ def main():
     print("Done")
 
 def readConfig():
+    global storagePath
+    global runs
+    global peakProminence
+    global peakWidth
+    global peakHeight
+    global alt
+    global az
+    global lat
+    global long
+    global elevation
+    global obs
+    
     config = configparser.ConfigParser()
     config.read('configurations.ini')
     obs = {
@@ -100,20 +112,17 @@ def readConfig():
     }
     print('\nConfiguration file loaded succesfully\n')    
     
-    global storagePath
-    global runs
-    global peakProminence
-    global peakWidth
-    global peakHeight
     storagePath = config['Storage']['storagePath']
     runs = int(config['ObservationParameters']['runCount'])
     peakProminence = float(config['Peakfinding']['prominence'])
     peakWidth = float(config['Peakfinding']['Width'])
     peakHeight = float(config['Peakfinding']['Height'])
+    az = float(config['ObservationParameters']['az_alt'].split(',')[0])
+    alt = float(config['ObservationParameters']['az_alt'].split(',')[1])
+    lat = float(config['ObservationParameters']['loc'].split(',')[0])
+    long = float(config['ObservationParameters']['loc'].split(',')[1])
+    elevation = float(config['ObservationParameters']['loc'].split(',')[2])
     
-    
-    return obs
-
 def makeDefaultConfigurationFile():
     config_file = configparser.ConfigParser()
     
@@ -129,16 +138,16 @@ def makeDefaultConfigurationFile():
     config_file.set("ObservationParameters", "frequency", "1420e6")
     config_file.set("ObservationParameters", "bandwidth", "2.4e6")
     config_file.set("ObservationParameters", "channels", "2048")
-    config_file.set("ObservationParameters", "t_sample", ".5")
-    config_file.set("ObservationParameters", "duration", "60")
-    config_file.set("ObservationParameters", "loc", "")
+    config_file.set("ObservationParameters", "t_sample", ".2")
+    config_file.set("ObservationParameters", "duration", "120")
+    config_file.set("ObservationParameters", "loc", "0, 0, 0")
     config_file.set("ObservationParameters", "ra_dec", "")
-    config_file.set("ObservationParameters", "az_alt", "")
+    config_file.set("ObservationParameters", "az_alt", "0, 0")
     config_file.set("ObservationParameters", "runCount", "1")
     config_file.set("Storage", "storagePath", "../HLineObservations/")
     config_file.set("Peakfinding", "Prominence", "0")
     config_file.set("Peakfinding", "Width", "10")
-    config_file.set("Peakfinding", "Height", "1.14")
+    config_file.set("Peakfinding", "Height", "3")
     
     # SAVE CONFIG FILE
     with open(r"configurations.ini", 'w') as configfileObj:
@@ -211,9 +220,9 @@ def analyzeData(filename, obs):
     calibrationSpectrum = _temporaryData[:]['calibrated_spectrum']
     spectrumAverage = moving_average(calibrationSpectrum, 20)
     
-    peaks = find_peaks(spectrumAverage, prominence=0, width=10 , height = 1.14)
+    peaks = find_peaks(spectrumAverage, prominence = peakProminence, width= peakWidth , height = peakHeight)
     
-    raDec = oldTimeEquatorial(alt=90, az=1, lat=1, lon=1, height=0, time = recordedTime)
+    raDec = oldTimeEquatorial(alt = alt, az = az, lat= lat, lon = long, height = elevation, time = recordedTime)
     galCoord = virgo.galactic(raDec[0], raDec[1])
     
 
