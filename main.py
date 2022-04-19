@@ -264,7 +264,6 @@ def analyzeData(filename, obs):
                       'b': [galCoord[1]],
                       'hz': [_temporaryData[:]['hz'][peaks[0][i]]]}
             writeFrame = pd.concat([writeFrame, pd.DataFrame(export)])
-        print(writeFrame)
         writeFrame.to_csv(storagePath + 'allObservations.csv', mode='a', index=False, header=False)
     
     plt.figure(dpi = 250)
