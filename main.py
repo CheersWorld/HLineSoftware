@@ -14,7 +14,7 @@ import configparser
 from tqdm import tqdm
 import seaborn as sns
 import numpy as np
-
+import plotly.express as px
 
 
 def main():
@@ -32,7 +32,7 @@ def main():
     parser.add_argument("-b", "--baseline", help ='Measure baseline. Automatic -nO', action = 'store_true')
     parser.add_argument("-sF", "--setupFolders", help = 'Generates default folder structure', action = 'store_true')
     parser.add_argument("-sC", "--setupConfig", help = 'Generates default configuration file', action = 'store_true')
-    parser.add_argument("-pA", "--plotAll", help ='Plot all observation files. Automatic -nO', action = 'store_true')
+    parser.add_argument("-pA", "--plotAll", help ='Plot all observation files', action = 'store_true')
     parser.add_argument("-nP", "--noPlot", help ='Disables automatic plotting', action = 'store_true')
     parser.add_argument("-map", "--heatmap", help ='Generate heatmap from recorded data', action = 'store_true')
     parser.add_argument("-i", "--infinite", help ='Infinite runs. Continue until stopped', action = 'store_true')
@@ -77,13 +77,12 @@ def main():
         files = glob.glob(storagePath + '/observationData/observations/' + '*.dat')
         for filePath in tqdm(files):
             analyzeData(filePath.split('/')[(len(filePath.split('/')) - 1)], obs)
-        return
-    
-    if args.noObservation:
-        return
     
     if args.heatmap:
         heatmap()
+        return
+    
+    if args.noObservation:
         return
     
     if args.infinite:
@@ -256,7 +255,7 @@ def analyzeData(filename, obs):
               'l': [],
               'b': [],
               'hz': []})
-        for i in range(0, len(peaks[0]) - 1):
+        for i in range(0, len(peaks[0])):
             export = {'time': [recordedTime],
                       'ra': [raDec[0]],
                       'dec': [raDec[1]],
@@ -265,6 +264,7 @@ def analyzeData(filename, obs):
                       'hz': [_temporaryData[:]['hz'][peaks[0][i]]]}
             writeFrame = pd.concat([writeFrame, pd.DataFrame(export)])
         writeFrame.to_csv(storagePath + 'allObservations.csv', mode='a', index=False, header=False)
+    
     
     plt.figure(dpi = 250)
     plt.plot(_temporaryData[:]['hz'], spectrumAverage)
@@ -312,11 +312,11 @@ def heatmap():
     data = pd.read_csv(storagePath + 'allObservations.csv')
     df = pd.DataFrame({'l': data['l'][:], 'b': data['b'][:], 'hz': data['hz'][:]})
     dfPivoted = pd.pivot_table(df, values = 'hz', index = ['l', 'b'], aggfunc = np.mean)
-    sns.heatmap(dfPivoted.reset_index().pivot('l', 'b', 'hz'))
-    plt.show()
-    plt.savefig(storagePath + 'plots/peakIdentification/heatmap ' + Time.now() + '.png')
+    plt.figure(dpi = 250)
+    fig = px.density_heatmap(dfPivoted.reset_index(), x="l", y="b", z="hz", histfunc="avg", nbinsx = 100, nbinsy = 100)
+    fig.write_image(storagePath + 'plots/heatmap ' + str(Time.now()).replace(':', '_') + '.png')
     plt.close('all')
-    
+    print("Heatmap export successfull")
 
 if __name__ == "__main__":
     main()
