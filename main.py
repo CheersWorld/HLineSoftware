@@ -19,6 +19,8 @@ import plotly.express as px
 
 def main():
     global obs
+    
+    #Parse console arguments
     parser = argparse.ArgumentParser()
     
     parser.add_argument("-r", "--runs", help = 'Number of measurements performed')
@@ -115,6 +117,7 @@ def readConfig():
     global elevation
     global obs
     
+    #Read file and assign parameters
     config = configparser.ConfigParser()
     config.read('configurations.ini')
     obs = {
@@ -147,7 +150,7 @@ def readConfig():
 def makeDefaultConfigurationFile():
     config_file = configparser.ConfigParser()
     
-    # ADD SECTION
+    #Generate file contents
     config_file.add_section("ObservationParameters")
     config_file.add_section("Storage")
     config_file.add_section("Peakfinding")
@@ -187,6 +190,7 @@ def makeFileStructure():
             os.makedirs(storagePath + 'csvFiles/spectra/')
             os.makedirs(storagePath + 'plots/Virgo/')
             os.makedirs(storagePath + 'plots/PeakIdentification/')
+            os.makedirs(storagePath + 'plots/heatmaps/')
             df = pd.DataFrame({'time':[],
                                'ra':[],
                                'dec':[],
@@ -197,6 +201,7 @@ def makeFileStructure():
 
 
 def baseline(obs):
+    #Recorded baseline and store in baseine.dat
     print('\n--------Starting baseline measurement--------\n')
     virgo.observe(obs_parameters=obs, obs_file=storagePath + 'observationData/baseline/baseline.dat', spectrometer='wola', start_in = 0)
     print('\n--------Calibration finished--------\n')
@@ -205,10 +210,11 @@ def baseline(obs):
 def observe(obs, noPlot):
     print('\n--------Starting observation--------')
     print('Current time: {0}.\nEstimated completion: {1}\n'.format(Time.now(), Time.now() + datetime.timedelta(seconds = obs['duration'])))
-    # Begin data acquisition    
-    filename = 'observation ' + str(Time.now()).replace(':', '_') + '.dat'
+    #Create file 
+    filename = 'observation ' + str(Time.now()).replace(':', '_') + obs['ra_dec'] + '.dat'
     fp = open(storagePath + 'observationData/observations/' + filename, 'x')
     fp.close()
+    #Begin data aqcuisition
     virgo.observe(obs_parameters=obs, obs_file=storagePath + 'observationData/observations/' + filename, spectrometer='wola', start_in = 0)
     print('\n--------Observation finished--------\n')
     if noPlot == False:
@@ -216,10 +222,12 @@ def observe(obs, noPlot):
     
 
 def analyzeData(filename, obs):
+    #Extract time of recording from filename
     recordedTime = filename.split(' ')[1] + ' '
     recordedTime += filename.split(' ')[2].replace('_', ':').split('.')[0] + '.'
     recordedTime += filename.split(' ')[2].replace('_', ':').split('.')[1]
     
+    #Extract csv files from .dat file
     virgo.plot(obs_parameters=obs, 
                dB =  True,
                n = 20,
@@ -231,22 +239,34 @@ def analyzeData(filename, obs):
                power_csv = storagePath + 'csvFiles/timeSeries/timeSeries ' + recordedTime.replace(':', '_') + '.csv',
                plot_file = storagePath + 'plots/Virgo/plot' + recordedTime.replace(':', '_') + '.png')
     
-    
+    #Add headers to csv file
     headerList = ['hz', 'spectrum', 'baseline', 'calibrated_spectrum']
     file = pd.read_csv(storagePath + 'csvFiles/spectra/spectrum ' + recordedTime.replace(':', '_') + '.csv') 
     file.to_csv(storagePath + "csvFiles/gfg2.csv", header=headerList, index=False)
 
-    
+    #Get data with headers from csv and caculate moving average
     _temporaryData = pd.read_csv(storagePath + "csvFiles/gfg2.csv")
     calibrationSpectrum = _temporaryData[:]['calibrated_spectrum']
     spectrumAverage = moving_average(calibrationSpectrum, 20)
     
+    #Find peaks in spectrum
     peaks = find_peaks(spectrumAverage, prominence = peakProminence, width= peakWidth , height = peakHeight)
     
-    raDec = oldTimeEquatorial(alt = alt, az = az, lat= lat, lon = long, height = elevation, time = recordedTime)
+    try:
+        #This fails if ra_dec has not been stored in the filename
+        filename.split(' ')[4]
+        recordedAz = float(filename.split(' ')[3].split(',')[0])
+        recordedAlt = float(filename.split(' ')[3].split(',')[1])
+    except:
+        print('No historic orientation data provided. Using default parameters')
+        recordedAz = az
+        recordedAlt = alt
+        
+    #Calculate galactic coordinates for observation
+    raDec = oldTimeEquatorial(alt = recordedAlt, az = recordedAz, lat= lat, lon = long, height = elevation, time = recordedTime)
     galCoord = virgo.galactic(raDec[0], raDec[1])
     
-
+    #Store recorded Peaks in a Dataframe and append Dataframe to overall csv file
     if peaks[0].size > 0:        
         writeFrame = pd.DataFrame(
             {'time': [],
@@ -265,14 +285,13 @@ def analyzeData(filename, obs):
             writeFrame = pd.concat([writeFrame, pd.DataFrame(export)])
         writeFrame.to_csv(storagePath + 'allObservations.csv', mode='a', index=False, header=False)
     
-    
+    #Generate and output peakfinding plot
     plt.figure(dpi = 250)
     plt.plot(_temporaryData[:]['hz'], spectrumAverage)
     plt.scatter(_temporaryData[:]['hz'][peaks[0]], spectrumAverage[peaks[0]], marker = 7, color = 'r')
     plt.title('Spectrum taken at ' + recordedTime)
     plt.ylabel('Signal to Noise ratio (1)')
     plt.xlabel('Frequency (hz)')
-    
     plt.savefig(storagePath + 'plots/peakIdentification/plot' + recordedTime.replace(':', '_') + '.png')
     plt.close('all')
     plt.clf()
@@ -309,14 +328,27 @@ def oldTimeEquatorial(alt, az, lat, lon, time, height=0):
 	return (ra, dec)
 
 def heatmap():
+    #Read overall csv for ra_dec and galactic coordiantes
     data = pd.read_csv(storagePath + 'allObservations.csv')
-    df = pd.DataFrame({'l': data['l'][:], 'b': data['b'][:], 'hz': data['hz'][:]})
-    dfPivoted = pd.pivot_table(df, values = 'hz', index = ['l', 'b'], aggfunc = np.mean)
+    dfGal = pd.DataFrame({'l': data['l'][:], 'b': data['b'][:], 'hz': data['hz'][:]})
+    dfRa = pd.DataFrame({'ra': data['ra'][:], 'dec': data['dec'][:], 'hz': data['hz'][:]})
+    
+    #Pivot table
+    dfGalPivoted = pd.pivot_table(dfGal, values = 'hz', index = ['l', 'b'], aggfunc = np.mean)
+    dfRaPivoted = pd.pivot_table(dfRa, values = 'hz', index = ['ra', 'dec'], aggfunc = np.mean)
+    
     plt.figure(dpi = 250)
-    fig = px.density_heatmap(dfPivoted.reset_index(), x="l", y="b", z="hz", histfunc="avg", nbinsx = 100, nbinsy = 100)
-    fig.write_image(storagePath + 'plots/heatmap ' + str(Time.now()).replace(':', '_') + '.png')
+    
+    #Generate heatmap
+    figGal = px.density_heatmap(dfGalPivoted.reset_index(), x="l", y="b", z="hz", histfunc="avg", nbinsx = 100, nbinsy = 100)
+    figRa = px.density_heatmap(dfRaPivoted.reset_index(), x="ra", y="dec", z="hz", histfunc="avg", nbinsx = 100, nbinsy = 100)
+    
+    #Export image
+    figGal.write_image(storagePath + 'plots/heatmaps/ ' + str(Time.now()).replace(':', '_') + 'heatmapGalCoord.png') 
+    figRa.write_image(storagePath + 'plots/heatmaps/' + str(Time.now()).replace(':', '_') + 'heatmapRaDec.png')
+    
     plt.close('all')
-    print("Heatmap export successfull")
+    print("Heatmap export successfull") 
 
 if __name__ == "__main__":
     main()
