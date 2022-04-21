@@ -46,4 +46,4 @@ The program will read the execution parameters from the configuration file. Thes
 -i, --infinite: Infinite run count
 ```
 
-Plotting data requires a baseline to be captured, otherwise the program will crash. You can still record data without plotting by using the -nP flag. 
+Plotting data requires a captured baseline to exist, otherwise the program will crash. You can still record data without plotting by using the -nP flag. 
