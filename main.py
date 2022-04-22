@@ -12,7 +12,6 @@ from astropy.coordinates import SkyCoord, EarthLocation
 import astropy.units as u
 import configparser
 from tqdm import tqdm
-import seaborn as sns
 import numpy as np
 import plotly.express as px
 
@@ -211,7 +210,7 @@ def observe(obs, noPlot):
     print('\n--------Starting observation--------')
     print('Current time: {0}.\nEstimated completion: {1}\n'.format(Time.now(), Time.now() + datetime.timedelta(seconds = obs['duration'])))
     #Create file 
-    filename = 'observation ' + str(Time.now()).replace(':', '_') + obs['ra_dec'] + '.dat'
+    filename = 'observation ' + str(Time.now()).replace(':', '_') + obs['az_alt'].replace(' ', '_') + '.dat'
     fp = open(storagePath + 'observationData/observations/' + filename, 'x')
     fp.close()
     #Begin data aqcuisition
@@ -253,10 +252,10 @@ def analyzeData(filename, obs):
     peaks = find_peaks(spectrumAverage, prominence = peakProminence, width= peakWidth , height = peakHeight)
     
     try:
-        #This fails if ra_dec has not been stored in the filename
+        #This fails if az_alt has not been stored in the filename
         filename.split(' ')[4]
-        recordedAz = float(filename.split(' ')[3].split(',')[0])
-        recordedAlt = float(filename.split(' ')[3].split(',')[1])
+        recordedAz = float(filename.split(' ')[3].replace('_', ' ').split(',')[0])
+        recordedAlt = float(filename.split(' ')[3].replace('_', ' ').split(',')[1])
     except:
         print('No historic orientation data provided. Using default parameters')
         recordedAz = az
