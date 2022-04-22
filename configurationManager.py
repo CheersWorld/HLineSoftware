@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import configparser
 import os
-import glovalVarsManager as gvars
+import globalVarsManager as gvars
 import pandas as pd
 import argparse
 
