@@ -14,6 +14,13 @@ import plotly.express as px
 import globalVarsManager as gvars
 import configurationManager as cm
 
+"""
+    This file handles observing and analysing data. Handling configuration files and console arguments
+    is performed by configurationManager.py.
+    
+    Shared variables between the two are stored in globalVarsManager.
+"""
+
 
 def main():
     cm.parseArguments()
@@ -54,8 +61,12 @@ def main():
     print("Done")
 
 
+"""
+    Record a baseline measurement and store it in baseline.dat
+"""
+
+
 def baseline(obs):
-    # Recorded baseline and store in baseine.dat
     print("\n--------Starting baseline measurement--------\n")
     virgo.observe(
         obs_parameters=gvars.obs,
@@ -66,6 +77,7 @@ def baseline(obs):
     print("\n--------Calibration finished--------\n")
 
 
+# Observe and analyze data
 def observe(obs, noPlot):
     print("\n--------Starting observation--------")
     print(
