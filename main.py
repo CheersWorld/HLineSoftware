@@ -210,7 +210,7 @@ def observe(obs, noPlot):
     print('\n--------Starting observation--------')
     print('Current time: {0}.\nEstimated completion: {1}\n'.format(Time.now(), Time.now() + datetime.timedelta(seconds = obs['duration'])))
     #Create file 
-    filename = 'observation ' + str(Time.now()).replace(':', '_') + obs['az_alt'].replace(' ', '_') + '.dat'
+    filename = 'observation ' + str(Time.now()).replace(':', '_') + ' ' + obs['az_alt'].replace(' ', '_') + '.dat'
     fp = open(storagePath + 'observationData/observations/' + filename, 'x')
     fp.close()
     #Begin data aqcuisition
