@@ -1,0 +1,15 @@
+global obs
+global peakProminence
+global peakWidth
+global peakHeight
+global storagePath
+global runs
+global peakProminence
+global peakWidth
+global peakHeight
+global alt
+global az
+global lat
+global long
+global elevation
+global args
