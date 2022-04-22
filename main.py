@@ -38,7 +38,7 @@ def main():
             analyzeData(filePath.split("/")[(len(filePath.split("/")) - 1)], gvars.obs)
 
     if gvars.args.heatmap:
-        heatmap()
+        createHeatmaps()
         return
 
     if gvars.args.noObservation:
@@ -183,7 +183,7 @@ def analyzeData(filename, obs):
     # Store recorded Peaks in a Dataframe and append Dataframe to overall csv file
     if peaks[0].size > 0:
         writeFrame = pd.DataFrame(
-            {"time": [], "ra": [], "dec": [], "l": [], "b": [], "hz": []}
+            {"time": [], "ra": [], "dec": [], "l": [], "b": [], "hz": [], "height": []}
         )
         for i in range(0, len(peaks[0])):
             export = {
@@ -193,6 +193,7 @@ def analyzeData(filename, obs):
                 "l": [galCoord[0]],
                 "b": [galCoord[1]],
                 "hz": [_temporaryData[:]["hz"][peaks[0][i]]],
+                "height": [peaks[1]["peak_heights"][i]],
             }
             writeFrame = pd.concat([writeFrame, pd.DataFrame(export)])
         writeFrame.to_csv(
@@ -261,58 +262,63 @@ def oldTimeEquatorial(alt, az, lat, lon, time, height=0):
     return (ra, dec)
 
 
-def heatmap():
+"""
+Creates 2D histograms (heatmaps) from the data in allObservations.csv.
+
+"""
+
+
+def createHeatmaps():
     # Read overall csv for ra_dec and galactic coordiantes
     data = pd.read_csv(gvars.storagePath + "allObservations.csv")
-    dfGal = pd.DataFrame({"l": data["l"][:], "b": data["b"][:], "hz": data["hz"][:]})
-    dfRa = pd.DataFrame(
-        {"ra": data["ra"][:], "dec": data["dec"][:], "hz": data["hz"][:]}
-    )
 
-    # Pivot table
-    dfGalPivoted = pd.pivot_table(dfGal, values="hz", index=["l", "b"], aggfunc=np.mean)
-    dfRaPivoted = pd.pivot_table(
-        dfRa, values="hz", index=["ra", "dec"], aggfunc=np.mean
-    )
-
+    # Generate heatmaps for the data and store in the appropriate location
     plt.figure(dpi=250)
 
-    # Generate heatmap
-    figGal = px.density_heatmap(
-        dfGalPivoted.reset_index(),
-        x="l",
-        y="b",
-        z="hz",
-        histfunc="avg",
-        nbinsx=100,
-        nbinsy=100,
-    )
-    figRa = px.density_heatmap(
-        dfRaPivoted.reset_index(),
-        x="ra",
-        y="dec",
-        z="hz",
-        histfunc="avg",
-        nbinsx=100,
-        nbinsy=100,
-    )
-
-    # Export image
-    figGal.write_image(
+    heatmap(data, "l", "b", "hz").write_image(
         gvars.storagePath
-        + "plots/heatmaps/ "
+        + "plots/heatmaps/frequency/"
         + str(Time.now()).replace(":", "_")
         + "heatmapGalCoord.png"
     )
-    figRa.write_image(
+
+    heatmap(data, "ra", "dec", "hz").write_image(
         gvars.storagePath
-        + "plots/heatmaps/"
+        + "plots/heatmaps/frequency/"
+        + str(Time.now()).replace(":", "_")
+        + "heatmapRaDec.png"
+    )
+
+    heatmap(data, "l", "b", "height").write_image(
+        gvars.storagePath
+        + "plots/heatmaps/height/"
+        + str(Time.now()).replace(":", "_")
+        + "heatmapGalCoord.png"
+    )
+
+    heatmap(data, "ra", "dec", "height").write_image(
+        gvars.storagePath
+        + "plots/heatmaps/height/"
         + str(Time.now()).replace(":", "_")
         + "heatmapRaDec.png"
     )
 
     plt.close("all")
     print("Heatmap export successfull")
+
+
+def heatmap(data, x, y, z):
+    df = pd.DataFrame({str(x): data[x][:], str(y): data[y][:], str(z): data[z][:]})
+    dfPivoted = pd.pivot_table(df, values=z, index=[x, y], aggfunc=np.mean)
+    return px.density_heatmap(
+        dfPivoted.reset_index(),
+        x=x,
+        y=y,
+        z=z,
+        histfunc="avg",
+        nbinsx=gvars.nBinsX,
+        nbinsy=gvars.nBinsY,
+    )
 
 
 if __name__ == "__main__":

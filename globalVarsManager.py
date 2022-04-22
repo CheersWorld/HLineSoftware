@@ -13,3 +13,5 @@ global lat
 global long
 global elevation
 global args
+global nBinsX
+global nBinsY

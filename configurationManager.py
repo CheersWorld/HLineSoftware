@@ -13,6 +13,7 @@ def makeDefaultConfigurationFile():
     config_file.add_section("ObservationParameters")
     config_file.add_section("Storage")
     config_file.add_section("Peakfinding")
+    config_file.add_section("Heatmaps")
 
     config_file.set("ObservationParameters", "dev_args", "rtl,bias=1")
     config_file.set("ObservationParameters", "rf_gain", "30")
@@ -21,16 +22,18 @@ def makeDefaultConfigurationFile():
     config_file.set("ObservationParameters", "frequency", "1420e6")
     config_file.set("ObservationParameters", "bandwidth", "2.4e6")
     config_file.set("ObservationParameters", "channels", "2048")
-    config_file.set("ObservationParameters", "t_sample", ".2")
+    config_file.set("ObservationParameters", "t_sample", ".12")
     config_file.set("ObservationParameters", "duration", "120")
     config_file.set("ObservationParameters", "loc", "0, 0, 0")
     config_file.set("ObservationParameters", "ra_dec", "")
-    config_file.set("ObservationParameters", "az_alt", "0, 0")
+    config_file.set("ObservationParameters", "az_alt", "0, 90")
     config_file.set("ObservationParameters", "runCount", "1")
     config_file.set("Storage", "storagePath", "../HLineObservations/")
     config_file.set("Peakfinding", "Prominence", "0")
     config_file.set("Peakfinding", "Width", "10")
     config_file.set("Peakfinding", "Height", "3")
+    config_file.set("Heatmaps", "nBinsX", "100")
+    config_file.set("Heatmaps", "nBinsY", "100")
 
     # SAVE CONFIG FILE
     with open(r"configurations.ini", "w") as configfileObj:
@@ -49,8 +52,9 @@ def makeFileStructure():
         os.makedirs(gvars.storagePath + "csvFiles/spectra/")
         os.makedirs(gvars.storagePath + "plots/Virgo/")
         os.makedirs(gvars.storagePath + "plots/PeakIdentification/")
-        os.makedirs(gvars.storagePath + "plots/heatmaps/")
-        df = pd.DataFrame({"time": [], "ra": [], "dec": [], "l": [], "b": [], "hz": []})
+        os.makedirs(gvars.storagePath + "plots/heatmaps/frequency")
+        os.makedirs(gvars.storagePath + "plots/heatmaps/height")
+        df = pd.DataFrame({"time": [], "ra": [], "dec": [], "l": [], "b": [], "hz": [], "height":[]})
         df.to_csv(gvars.storagePath + "allObservations.csv")
 
 
@@ -163,3 +167,5 @@ def readConfig():
     gvars.lat = float(config["ObservationParameters"]["loc"].split(",")[0])
     gvars.long = float(config["ObservationParameters"]["loc"].split(",")[1])
     gvars.elevation = float(config["ObservationParameters"]["loc"].split(",")[2])
+    gvars.nBinsX = int(config["Heatmaps"]["nBinsX"])
+    gvars.nBinsY = int(config["Heatmaps"]["nBinsY"])
