@@ -54,12 +54,13 @@ def makeFileStructure():
         os.makedirs(gvars.storagePath + "plots/PeakIdentification/")
         os.makedirs(gvars.storagePath + "plots/heatmaps/frequency")
         os.makedirs(gvars.storagePath + "plots/heatmaps/height")
-        df = pd.DataFrame({"time": [], "ra": [], "dec": [], "l": [], "b": [], "hz": [], "height":[]})
+        df = pd.DataFrame(
+            {"time": [], "ra": [], "dec": [], "l": [], "b": [], "hz": [], "height": []}
+        )
         df.to_csv(gvars.storagePath + "allObservations.csv")
 
 
-def parseArguments():
-
+def parseArgumens():
     # Parse console arguments
     parser = argparse.ArgumentParser()
 
@@ -112,6 +113,11 @@ def parseArguments():
         action="store_true",
     )
     gvars.args = parser.parse_args()
+
+
+def setParameters():
+    parseArgumens()
+    readConfig()
     if gvars.args.setupConfig:
         makeDefaultConfigurationFile()
 

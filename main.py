@@ -23,8 +23,7 @@ import configurationManager as cm
 
 
 def main():
-    cm.parseArguments()
-    cm.readConfig()
+    cm.setParameters()
 
     if gvars.args.baseline:
         baseline(gvars.obs)
@@ -161,7 +160,7 @@ def analyzeData(filename, obs):
 
     try:
         # This fails if az_alt has not been stored in the filename
-        filename.split(" ")[4]
+        filename.split(" ")[3]
         recordedAz = float(filename.split(" ")[3].replace("_", " ").split(",")[0])
         recordedAlt = float(filename.split(" ")[3].replace("_", " ").split(",")[1])
     except:
