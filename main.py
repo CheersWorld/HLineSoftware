@@ -161,8 +161,12 @@ def analyzeData(filename, obs):
     try:
         # This fails if az_alt has not been stored in the filename
         filename.split(" ")[3]
-        recordedAz = float(filename.split(" ")[3].replace("_", " ").split(",")[0])
-        recordedAlt = float(filename.split(" ")[3].replace("_", " ").split(",")[1])
+        recordedAz = float(
+            filename.split(" ")[3].replace("_", " ").split(".")[0].split(",")[0]
+        )
+        recordedAlt = float(
+            filename.split(" ")[3].replace("_", " ").split(".")[0].split(",")[1]
+        )
     except:
         print("No historic orientation data provided. Using default parameters")
         recordedAz = gvars.az
@@ -204,7 +208,7 @@ def analyzeData(filename, obs):
 
     # Generate and output peakfinding plot
     plt.figure(dpi=250)
-    plt.plot(_temporaryData[:]["hz"], spectrumAverage)
+    plt.plot(_temporaryData[:]["hz"], spectrumAverage, label="moving average n = 20")
     plt.scatter(
         _temporaryData[:]["hz"][peaks[0]],
         spectrumAverage[peaks[0]],
