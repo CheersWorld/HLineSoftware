@@ -55,7 +55,7 @@ def main():
     i = 0
     while i < gvars.runs:
         print("Starting observation {0} of {1}".format(i + 1, gvars.runs))
-        observe(gvars.gvars.obs, gvars.args.noPlot)
+        observe(gvars.obs, gvars.args.noPlot)
         i += 1
     print("Done")
 
@@ -85,13 +85,7 @@ def observe(obs, noPlot):
         )
     )
     # Create file
-    filename = (
-        "observation "
-        + str(Time.now()).replace(":", "_")
-        + " "
-        + obs["az_alt"].replace(" ", "_")
-        + ".dat"
-    )
+    filename = "observation " + str(Time.now()).replace(":", "_") + ".dat"
     fp = open(gvars.storagePath + "observationData/observations/" + filename, "x")
     fp.close()
     # Begin data aqcuisition
@@ -118,6 +112,7 @@ def analyzeData(filename, obs):
         dB=True,
         n=20,
         m=20,
+        slope_correction=True,
         f_rest=1420.4057517667e6,
         obs_file=gvars.storagePath + "observationData/observations/" + filename,
         cal_file=gvars.storagePath + "observationData/baseline/baseline.dat",
@@ -157,21 +152,22 @@ def analyzeData(filename, obs):
         width=gvars.peakWidth,
         height=gvars.peakHeight,
     )
-
     try:
-        # This fails if az_alt has not been stored in the filename
-        filename.split(" ")[3]
-        recordedAz = float(
-            filename.split(" ")[3].replace("_", " ").split(".")[0].split(",")[0]
-        )
-        recordedAlt = float(
-            filename.split(" ")[3].replace("_", " ").split(".")[0].split(",")[1]
-        )
+        with open(
+            gvars.storagePath
+            + "observationData/observations/"
+            + filename.split(".")[0]
+            + "."
+            + filename.split(".")[1]
+            + ".header"
+        ) as headerFile:
+            header = headerFile.readlines()
+        recordedAz = float(header[12].split("=")[1].split(",")[0])
+        recordedAlt = float(header[12].split("=")[1].split(",")[1])
     except:
-        print("No historic orientation data provided. Using default parameters")
+        print("Header file for " + filename + " not found")
         recordedAz = gvars.az
         recordedAlt = gvars.alt
-
     # Calculate galactic coordinates for observation
     raDec = oldTimeEquatorial(
         alt=recordedAlt,
